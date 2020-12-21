@@ -1,0 +1,73 @@
+SELECT product_tag.Tag AS Promotion, promotion.DiscountPercentage AS Percent 
+FROM product_tag 
+INNER JOIN promotion_tag 
+ON promotion_tag.Tag = product_tag.Tag 
+AND product_tag.ProductID = '49827669' 
+INNER JOIN promotion 
+ON promotion_tag.PromotionID = promotion.ID 
+AND TO_TIMESTAMP('2020-06-13 10:23:00', 'YYYY-MM-DD HH24:MI:SS') > promotion.StartTime 
+AND TO_TIMESTAMP('2020-06-13 10:23:00', 'YYYY-MM-DD HH24:MI:SS') < promotion.EndTime; 
+
+SELECT * 
+FROM transaction 
+WHERE PaymentMethod = 'credit' 
+UNION 
+SELECT * 
+FROM transaction 
+WHERE PaymentMethod = 'debit'; 
+
+SELECT m.FullName, count(e.ID) AS subordinates 
+FROM manager m 
+LEFT JOIN employee e 
+ON m.ID = e.Manager_ID 
+GROUP BY m.FullName 
+HAVING count(e.ID) < 4; 
+
+SELECT StoreLocation, rsp1.ProductID, Name 
+FROM retail_store_product rsp1, product 
+WHERE rsp1.ProductID = product.ID 
+AND NOT EXISTS 
+(SELECT * 
+FROM retail_store_product rsp2 
+WHERE rsp1.ProductID = rsp2.ProductID 
+AND rsp1.StoreLocation <> rsp2.StoreLocation); 
+
+SELECT ID, Name 
+FROM product 
+WHERE EXISTS 
+(SELECT rsp.ProductID 
+FROM retail_store_product rsp, warehouse_product w1, warehouse_product w2 
+WHERE ID = rsp.productid 
+AND w1.WarehouseLocation = 'W2' 
+AND w2.WarehouseLocation = 'W3' 
+AND rsp.ProductID = w1.ProductID 
+AND rsp.ProductID = w2.ProductID); 
+
+select r.addressid ,    count(w.addressid) as "WareHouses#", 
+( 
+select count(*) 
+from employee e 
+where r.addressid = e.storeid 
+group by r.addressid 
+) as employees# 
+from RETAIL_STORE r, WAREHOUSE_RETAIL_STORE l, WAREHOUSE w 
+where r.addressid = l.storelocation 
+and l.warehouselocation = w.addressid 
+group by r.addressid; 
+
+SELECT rp.STORELOCATION,p.name, 
+( 
+SELECT   count(t.id) 
+from TRANSACTION t, TRANSACTION_PRODUCT tp 
+where t.id = tp.transactionid and tp.productid = p.id 
+group by p.name 
+) as "#of transactions" 
+FROM RETAIL_STORE_PRODUCT rp, product p 
+where rp.productid = p.id; 
+
+SELECT w.AddressID AS warehouse, wp.Quantity 
+FROM warehouse w 
+INNER JOIN warehouse_retail_store wr 
+ON  w.AddressID = wr.WarehouseLocation AND wr.StoreLocation = '01' 
+INNER JOIN warehouse_product wp 
+ON wp.ProductID = '09827356' AND wp.WarehouseLocation = w.AddressID; 

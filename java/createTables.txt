@@ -1,0 +1,205 @@
+CREATE TABLE contactINFO(
+ContactID VARCHAR2(8) PRIMARY KEY, 
+Email VARCHAR2(32) UNIQUE, 
+Phone VARCHAR2(16) UNIQUE 
+);
+
+
+CREATE TABLE Address( 
+AddressID VARCHAR2(8) PRIMARY KEY, 
+Street VARCHAR2(32), 
+City VARCHAR2(32), 
+Country VARCHAR2(32) 
+); 
+
+CREATE TABLE retail_store( 
+	Cash DECIMAL(19, 4), 
+	AddressID  VARCHAR2(32) PRIMARY KEY REFERENCES Address(AddressID) 
+);
+
+
+
+CREATE TABLE manager(
+	Username VARCHAR2(16) NOT NULL UNIQUE, 
+	Password VARCHAR2(16) NOT NULL, 
+	ID VARCHAR2(8) PRIMARY KEY, 
+	FullName VARCHAR2(16) NOT NULL, 
+	InvoiceInfo VARCHAR2(16), 
+	HourlyRate DECIMAL(19, 4) DEFAULT 11.06, 
+	HoursWorked INT DEFAULT 0, 
+	CONSTRAINT CHK_Mngr_Credentials_Security CHECK(Username != Password), 
+	STOREID VARCHAR2(32) REFERENCES retail_store(AddressID), 
+	Address  VARCHAR2(32) REFERENCES Address(AddressID), 
+	Contact VARCHAR2(32) REFERENCES contactINFO(ContactID) 
+);
+
+CREATE TABLE mID_strID(
+manager_ID VARCHAR2(8) PRIMARY KEY REFERENCES manager(ID), 
+StoreID VARCHAR2(32) REFERENCES retail_store(AddressID) 
+);
+
+CREATE TABLE employee(	
+	Username VARCHAR2(16) NOT NULL UNIQUE, 
+	Password VARCHAR2(16) NOT NULL, 
+	ID VARCHAR2(8) PRIMARY KEY, 
+	FullName VARCHAR2(16) NOT NULL, 
+	InvoiceInfo VARCHAR2(16), 
+	HourlyRate DECIMAL(19, 4) DEFAULT 11.06, 
+	HoursWorked INT DEFAULT 0, 
+manager_ID  VARCHAR2(32) REFERENCES mID_strID(manager_ID), 
+	CONSTRAINT CHK_Credentials_Security CHECK(Username != Password AND LENGTH(Username)>3 AND LENGTH(Password)>6), 
+	STOREID VARCHAR2(32) REFERENCES retail_store(AddressID), 
+	Address  VARCHAR2(32) REFERENCES Address(AddressID), 
+	Contact VARCHAR2(32) REFERENCES contactINFO(ContactID) 
+);
+
+CREATE TABLE admin( 
+AdminUsername VARCHAR2(16), 
+AdminPassword  VARCHAR2(16), 
+ 	Username VARCHAR2(16) NOT NULL UNIQUE, 
+ 	Password VARCHAR2(16) NOT NULL, 
+ 	ID VARCHAR2(8) PRIMARY KEY, 
+ 	FullName VARCHAR2(16) NOT NULL, 
+ 	InvoiceInfo VARCHAR2(16), 
+	HourlyRate DECIMAL(19, 4) DEFAULT 11.06, 
+	HoursWorked INT DEFAULT 0, 
+	CONSTRAINT CHK_Admin_Credentials_Security CHECK(AdminUsername != Username AND AdminUsername != AdminPassword AND LENGTH(Username)>3 AND LENGTH(Password)>6 AND Username != Password AND LENGTH(Username)>3 AND LENGTH(Password)>6), 
+	Address  VARCHAR2(32) REFERENCES Address(AddressID), 
+	Contact VARCHAR2(32) REFERENCES contactINFO(ContactID) 
+);
+
+
+CREATE TABLE transaction( 
+	ID VARCHAR2(8) PRIMARY KEY, 
+	RegisterNumber VARCHAR2(8) NOT NULL, 
+	TransactionTime TIMESTAMP NOT NULL, 
+	PaymentMethod VARCHAR2(32) NOT NULL, 
+	STOREID VARCHAR2(32) REFERENCES retail_store(AddressID) 
+);
+ 
+CREATE TABLE promotion( 
+	ID VARCHAR2(8) PRIMARY KEY, 
+	StartTime TIMESTAMP, 
+	EndTime TIMESTAMP, 
+	DiscountPercentage INT NOT NULL 
+);
+
+CREATE TABLE tag(
+	Name VARCHAR2(32) PRIMARY KEY 
+);
+
+CREATE TABLE rewards_customer( 
+	FullName VARCHAR2(16), 
+	ID VARCHAR2(16) PRIMARY KEY, 
+	Password VARCHAR2(16) NOT NULL, 
+	PaymentInfo VARCHAR2(16), 
+	RewardPoints INT DEFAULT 0, 
+	CONSTRAINT CHK_Cstmr_Credentials_Security CHECK(LENGTH(Password)>6), 
+	Contact VARCHAR2(32) REFERENCES contactINFO(ContactID) 
+);
+CREATE TABLE warehouse( 
+	AddressID  VARCHAR2(32) PRIMARY KEY REFERENCES Address(AddressID) 
+);
+CREATE TABLE product( 
+	Name VARCHAR2(32), 
+	ID VARCHAR2(8) PRIMARY KEY, 
+	Price DECIMAL(19, 4) DEFAULT NULL 
+);
+
+CREATE TABLE employee_shift( 
+	ID VARCHAR2(8) PRIMARY KEY, 
+	StartTime TIMESTAMP,
+	EndTime TIMESTAMP,
+	STOREID VARCHAR2(32) REFERENCES retail_store(AddressID)  
+);
+
+/*Relationship tables*/
+
+/*What employees are assigned to a shift?*/ 
+CREATE TABLE employee_shift_employee( 
+	ShiftID VARCHAR(8) REFERENCES employee_shift(ID), 
+	EmployeeID VARCHAR2(8) REFERENCES employee(ID), 
+	AssignedTask VARCHAR2(64), 
+	PRIMARY KEY(ShiftID, EmployeeID) 
+);
+
+/*What warehouses are authorized to stock inventory of a store?*/ 
+CREATE TABLE warehouse_retail_store( 
+	StoreLocation VARCHAR2(32) REFERENCES retail_store(AddressID), 
+	WarehouseLocation VARCHAR2(32) REFERENCES warehouse(AddressID), 
+	PRIMARY KEY(StoreLocation, WarehouseLocation) 
+);
+
+/*What products are contained at a store location?*/ 
+CREATE TABLE retail_store_product( 
+	StoreLocation VARCHAR2(32) REFERENCES retail_store(AddressID), 
+	ProductID VARCHAR2(8) REFERENCES product(ID), 
+	Quantity INT DEFAULT 0, 
+	CONSTRAINT CHK_Retail_Quantity CHECK (Quantity>=0), 
+	PRIMARY KEY(StoreLocation, ProductID) 
+);
+
+/*What products are contained at a warehouse?*/
+CREATE TABLE warehouse_product( 
+	WarehouseLocation VARCHAR2(32) REFERENCES warehouse(AddressID), 
+	ProductID VARCHAR2(8) REFERENCES product(ID), 
+	Quantity INT DEFAULT 0, 
+	CONSTRAINT CHK_Warehouse_Quantity CHECK (Quantity>=0), 
+	PRIMARY KEY(WarehouseLocation, ProductID) 
+);
+
+/*What products were included in a transaction?*/ 
+CREATE TABLE transaction_product( 
+	TransactionID VARCHAR2(8) REFERENCES transaction(ID), 
+	ProductID VARCHAR2(8) REFERENCES product(ID), 
+	Quantity INT DEFAULT 0, 
+	CONSTRAINT CHK_Quantity CHECK (Quantity>=0), 
+	PRIMARY KEY(TransactionID, ProductID), 
+	CUSTOMER VARCHAR2(16) REFERENCES rewards_customer(ID) 
+);
+
+/*What discounts were applied to a transaction?*/
+CREATE TABLE transaction_promotion( 
+	TransactionID VARCHAR2(8) REFERENCES transaction(ID), 
+	PromotionID VARCHAR2(8) REFERENCES promotion(ID), 
+	PRIMARY KEY(TransactionID, PromotionID) 
+);
+
+/*What types of products does a discount affect?*/
+CREATE TABLE promotion_tag( 
+	PromotionID VARCHAR2(8) REFERENCES promotion(ID), 
+	Tag VARCHAR2(32) REFERENCES tag(name), 
+	PRIMARY KEY(PromotionID, Tag) 
+);
+
+/*What type of product is this?*/
+CREATE TABLE product_tag(  
+	ProductID VARCHAR2(8) REFERENCES product(ID),  
+	Tag VARCHAR2(32) REFERENCES tag(name), 
+	PRIMARY KEY(ProductID, Tag)  
+); 
+
+/*views*/
+
+DROP VIEW experienced_employees; 
+CREATE VIEW experienced_employees(ID, Name, Store, Hours) AS 
+(SELECT ID, FullName, STOREID, HoursWorked 
+FROM employee 
+WHERE HoursWorked > 199); 
+
+DROP VIEW need_restock;
+CREATE VIEW need_restock(StoreLocation, ProductID, Quantity) 
+AS (SELECT StoreLocation, ProductID, Quantity 
+FROM retail_store_product 
+WHERE Quantity <= 50); 
+
+DROP VIEW active_promotions; 
+CREATE VIEW active_promotions(PromotionID, Percentage, EndsOn) 
+AS (SELECT p.ID, p.DiscountPercentage, p.EndTime 
+FROM promotion p 
+WHERE (SELECT CURRENT_TIMESTAMP FROM dual) > p.StartTime 
+AND (SELECT CURRENT_TIMESTAMP FROM dual) < p.EndTime); 
+
+
+COMMIT;
+
