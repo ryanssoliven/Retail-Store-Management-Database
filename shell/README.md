@@ -1,1 +1,1 @@
-Shell scripts to create the database, tables, and to populate the tables on the Oracle server.
+Shell scripts to create tables, drop tables, populate tables, and SQL queries to test the database on the Oracle server.
